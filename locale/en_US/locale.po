@@ -19,4 +19,4 @@ msgid "plugins.generic.mailLogger.settings.logFilePath"
 msgstr "Full path to the log file"
 
 msgid "plugins.generic.mailLogger.settings.logFilePath.description"
-msgstr "The path to the log file where email information is saved"
+msgstr "The full path to the log file where email information is saved, including filename."
