@@ -14,13 +14,11 @@
  */
 
 use PKP\plugins\GenericPlugin;
-use PKP\linkAction\request\AjaxModal;
-use PKP\linkAction\LinkAction;
-use PKP\core\JSONMessage;
-use APP\core\Application;
+use PKP\file\PrivateFileManager;
 
 class MailLoggerPlugin extends GenericPlugin
 {
+    const LOG_PATH_RELATIVE = 'logs' . DIRECTORY_SEPARATOR . 'email.log';
     /**
      * @copydoc Plugin::getDisplayName()
      */
@@ -61,12 +59,9 @@ class MailLoggerPlugin extends GenericPlugin
      */
     public function registerLogger()
     {
-        $context = $this->getRequest()->getContext();
-        $contextId = $context ? $context->getId() : Application::CONTEXT_SITE;
-
         $mailLogConfig = [
             'driver' => 'single',
-            'path' => $this->getSetting($contextId, 'logFilePath'),
+            'path' => (new PrivateFileManager())->getBasePath() . DIRECTORY_SEPARATOR . self::LOG_PATH_RELATIVE,
             'level' => 'debug',
         ];
         config([
@@ -77,67 +72,4 @@ class MailLoggerPlugin extends GenericPlugin
             ],
         ]);
     }
-
-    /**
-     * @see Plugin::getActions()
-     */
-    public function getActions($request, $actionArgs)
-    {
-        $actions = parent::getActions($request, $actionArgs);
-
-        if (!$this->getEnabled()) {
-            return $actions;
-        }
-
-        $router = $request->getRouter();
-        $linkAction = new LinkAction(
-            'settings',
-            new AjaxModal(
-                $router->url(
-                    $request,
-                    null,
-                    null,
-                    'manage',
-                    null,
-                    [
-                        'verb' => 'settings',
-                        'plugin' => $this->getName(),
-                        'category' => 'generic'
-                    ]
-                ),
-                $this->getDisplayName()
-            ),
-            __('manager.plugins.settings'),
-            null
-        );
-
-        array_unshift($actions, $linkAction);
-
-        return $actions;
-    }
-
-    /**
-     * @see Plugin::manage()
-     */
-    public function manage($args, $request)
-    {
-        switch ($request->getUserVar('verb')) {
-            case 'settings':
-                $this->import('MailLoggerSettingsForm');
-                $form = new MailLoggerSettingsForm($this);
-
-                if ($request->getUserVar('save')) {
-                    $form->readInputData();
-                    if ($form->validate()) {
-                        $form->execute();
-                        return new JSONMessage(true);
-                    }
-                }
-
-                $form->initData();
-                return new JSONMessage(true, $form->fetch($request));
-        }
-        return parent::manage($args, $request);
-    }
-
 }
